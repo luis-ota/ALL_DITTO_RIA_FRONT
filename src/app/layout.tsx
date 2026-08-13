@@ -61,6 +61,7 @@ export default function RootLayout({
                                 Classificação de NC
                             </Link>
                         </NavbarItem>
+                       
                     </NavbarContent>
                 </Navbar>
                 {children}

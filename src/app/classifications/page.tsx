@@ -24,6 +24,7 @@ import {VerticalDotsIcon} from "@/components/VerticalDotsIcon";
 import {PlusIcon} from "@/components/PlusIcon";
 import {useRouter} from "next/navigation";
 import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-org/modal";
+import {Loading} from "@/components/Lodding";
 
 export default function Classification() {
     const [data, setData] = useState<PagedResultDto<NcClassification> | null>(null);
@@ -105,7 +106,7 @@ export default function Classification() {
             className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
             <main className="flex flex-col gap-8 row-start-2 items-start min-w-full">
                 <h1>NC Classifications</h1>
-                {isLoading ? (<h1 className={'min-w-full text-center'}>Loading..</h1>) : (
+                <Loading loaded={!isLoading}>
                     <Table aria-label="Example table with dynamic content">
                         <TableHeader columns={columns}>
                             {(column) => <TableColumn width={column.key !== 'actions' ? `100%` : undefined}
@@ -124,7 +125,7 @@ export default function Classification() {
                             )}
                         </TableBody>
                     </Table>
-                )}
+                </Loading>
                 <div className="flex gap-3">
                     <Button
                         className="bg-foreground text-background"

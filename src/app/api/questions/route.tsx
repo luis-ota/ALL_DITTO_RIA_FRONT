@@ -20,9 +20,19 @@ export async function GET(request: Request): Promise<Response> {
     const dataSource = await initializeDataSource();
     const questionRepository = dataSource.getRepository(Question);
 
+    const url = new URL(request.url);
+    const params = url.searchParams;
+    const temSurvey = params.has('surveyId') ;
+     let surveyId = undefined;
+     if (temSurvey) surveyId = params.get('surveyId');
+
+
     const questions = await questionRepository.findAndCount({
         order: {
             order: "ASC"
+        },
+        where: {
+          surveyId: surveyId ?? undefined,
         },
         relations: ['ncClassification']
     });

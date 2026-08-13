@@ -1,5 +1,6 @@
 import {initializeDataSource} from "@/db/DataSource";
-import {Question} from "@/entities/Entities";
+import {NonConformity, Question} from "@/entities/Entities";
+import {QuestionStatus} from "@/enums/QuestionStatus";
 
 export async function GET(request: Request): Promise<Response> {
     const questionId = request.url.split('/').pop();
@@ -25,6 +26,7 @@ export async function PUT(request: Request): Promise<Response> {
     const questionId = request.url.split('/').pop();
     let question = (await request.json()) as Question;
 
+
     const dataSource = await initializeDataSource();
     const questionRepository = dataSource.getRepository(Question);
     const dbQuestion = await questionRepository.findOneBy({
@@ -34,8 +36,23 @@ export async function PUT(request: Request): Promise<Response> {
         return new Response('', { status: 404 });
     }
 
+    let mudouConformidade = question.status === QuestionStatus.NotOk && dbQuestion.status !== question.status;
+
     dbQuestion.update(question);
     question = await questionRepository.save(dbQuestion);
+
+    if (mudouConformidade) {
+        const ncRepository = dataSource.getRepository(NonConformity);
+
+        const alreadyHas = await ncRepository.countBy({ questionId: question.id });
+        if (alreadyHas <= 0) {
+            const nc = new NonConformity();
+            nc.questionId = question.id;
+            ncRepository.create(nc);
+            await ncRepository.save(nc);
+        }
+
+    }
 
     return new Response(JSON.stringify(question), {
         status: 200,

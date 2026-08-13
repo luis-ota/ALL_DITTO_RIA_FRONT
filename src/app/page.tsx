@@ -4,6 +4,10 @@ import {PagedResultDto} from "@/PagedResultDto";
 import {Survey} from "@/entities/Entities";
 import {
     Button,
+    Dropdown,
+    DropdownItem,
+    DropdownMenu,
+    DropdownTrigger,
     getKeyValue,
     Table,
     TableBody,
@@ -20,12 +24,13 @@ import {useRouter} from "next/navigation";
 import {PlusIcon} from "@/components/PlusIcon";
 import {Loading} from "@/components/Lodding";
 import {Modal, ModalBody, ModalContent, ModalFooter, ModalHeader} from "@nextui-org/modal";
+import {TemplatesList} from "@/components/TemplatesList";
+import {createSurveyFromTemplate} from "@/functions/surveys";
 
 export default function Home() {
     const [data, setData] = useState<PagedResultDto<Survey> | null>(null)
     const [isLoading, setLoading] = useState(true)
     const router = useRouter();
-
     const {isOpen, onOpen, onOpenChange} = useDisclosure();
 
     const columns = [
@@ -83,16 +88,47 @@ export default function Home() {
                             )}
                         </TableBody>
                     </Table>
-                    <Button
-                        className="bg-foreground text-background"
-                        endContent={<PlusIcon/>}
-                        size="sm"
-                        onClick={() => router.push('surveys/new')}
-                    >
-                        Add New
-                    </Button>
+                    <Dropdown className="bg-background border-1 border-default-200">
+                        <DropdownTrigger>
+                            <Button
+                                className="bg-foreground text-background"
+                                endContent={<PlusIcon/>}
+                                size="sm"
+                            >
+                                Add New
+                            </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu>
+                            <DropdownItem onClick={() => router.push('surveys/new')}>Empty</DropdownItem>
+                            <DropdownItem onClick={onOpen} >From template</DropdownItem>
+                        </DropdownMenu>
+                    </Dropdown>
                 </Loading>
             </main>
+
+            <Modal isOpen={isOpen} onOpenChange={onOpenChange}>
+                <ModalContent>
+                    {(onClose) => (
+                        <>
+                            <ModalHeader className="flex flex-col gap-1">Select a template</ModalHeader>
+                            <ModalBody>
+                                <TemplatesList clickAction={async (t) => {
+                                    const survey = await createSurveyFromTemplate(t.id)
+                                    onClose();
+                                    if (survey) {
+                                        router.push('surveys/' + survey.id)
+                                    }
+                                }} />
+                            </ModalBody>
+                            <ModalFooter>
+                                <Button color="danger" variant="light" onPress={onClose}>
+                                    Close
+                                </Button>
+                            </ModalFooter>
+                        </>
+                    )}
+                </ModalContent>
+            </Modal>
         </div>
     );
 }

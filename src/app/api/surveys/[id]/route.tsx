@@ -1,5 +1,5 @@
 import {initializeDataSource} from "@/db/DataSource";
-import {Survey} from "@/entities/Entities";
+import {Question, Survey} from "@/entities/Entities";
 
 export async function GET(request: Request): Promise<Response> {
     const surveyId = request.url.split('/').pop();
@@ -10,7 +10,7 @@ export async function GET(request: Request): Promise<Response> {
     });
 
     if (!surveyId) {
-        return new Response('', { status: 404 });
+        return new Response('', {status: 404});
     }
     return new Response(JSON.stringify(survey), {
         status: 200,
@@ -28,7 +28,7 @@ export async function PUT(request: Request): Promise<Response> {
         id: surveyId
     });
     if (!dbSurvey) {
-        return new Response('', { status: 404 });
+        return new Response('', {status: 404});
     }
 
     dbSurvey.update(survey);
@@ -49,7 +49,43 @@ export async function DELETE(request: Request): Promise<Response> {
 
 
     return new Response('', {
-        status: Number(result.affected) > 0 ?  200: 404,
+        status: Number(result.affected) > 0 ? 200 : 404,
+        headers: {'Content-Type': 'application/json'},
+    });
+}
+
+export async function POST(request: Request): Promise<Response> {
+    const templateId = request.url.split('/').pop() ?? '';
+
+    const dataSource = await initializeDataSource();
+    const surveyRepository = dataSource.getRepository(Survey);
+    let survey = await surveyRepository.findOne({where: {id: templateId}})
+
+    if (!survey) {
+        return new Response('', {
+            status: 404,
+            headers: {'Content-Type': 'application/json'},
+        });
+    }
+
+    survey = surveyRepository.create(new Survey(survey));
+    survey.template = false;
+    await surveyRepository.save(survey);
+
+    const questionsRepository = dataSource.getRepository(Question);
+    let questions = await questionsRepository.findBy({surveyId: templateId});
+
+    questions = await Promise.all(
+        questions.map(async (question) => {
+            const nQuestion = new Question(question);
+            nQuestion.surveyId = survey.id;
+            return questionsRepository.create(nQuestion);
+        })
+    );
+    await questionsRepository.save(questions);
+
+    return new Response(JSON.stringify(survey), {
+        status: 200,
         headers: {'Content-Type': 'application/json'},
     });
 }
